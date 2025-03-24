@@ -1,15 +1,15 @@
 import React from 'react';
 
 // Form Input Component - Has inconsistent styling and lacks proper structure
-const Input = ( props ) => {
+const Input = ( { label, type, value, onChange, placeholder } ) => {
 	return (
 		<div className="input-group">
-			<label>{ props.label }</label>
+			<label>{ label }</label>
 			<input 
-				type={ props.type || 'text' }
-				value={ props.value }
-				onChange={ props.onChange }
-				placeholder={ props.placeholder } />
+				type={ type || 'text' }
+				value={ value }
+				onChange={ onChange }
+				placeholder={ placeholder } />
 		</div>
 	);
 }
