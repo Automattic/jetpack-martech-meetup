@@ -21,3 +21,5 @@ const Card = ({ title, content, footer, image }) => {
 		</div>
 	);
 };
+
+export default Card;
