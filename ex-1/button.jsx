@@ -2,7 +2,6 @@
 // import clsx from 'Classnames';
 
 const Button = () => {
-
     const { label, onClick, isDisabled, type, size } = this.props;
 		
 		let className = 'btn';
