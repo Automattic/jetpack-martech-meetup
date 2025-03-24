@@ -2,27 +2,28 @@
 /* global Component */
 
 // Button Component - Has inconsistent styling and naming
-class Button extends Component {
-	render() {
-		const { label, onClick, isDisabled, type, size } = this.props;
+//// Moved to button.js
+// class Button extends Component {
+// 	render() {
+// 		const { label, onClick, isDisabled, type, size } = this.props;
 		
-		let className = 'btn';
-		if ( size == 'large' ) className += ' btn-lg';
-		if ( size == 'small' ) className += ' btn-sm';
-		if ( type == 'primary' ) className += ' btn-primary';
-		if ( type == 'secondary' ) className += ' btn-secondary';
-		if ( type == 'danger' ) className += ' btn-danger';
+// 		let className = 'btn';
+// 		if ( size == 'large' ) className += ' btn-lg';
+// 		if ( size == 'small' ) className += ' btn-sm';
+// 		if ( type == 'primary' ) className += ' btn-primary';
+// 		if ( type == 'secondary' ) className += ' btn-secondary';
+// 		if ( type == 'danger' ) className += ' btn-danger';
 		
-		return (
-			<button 
-				className={ className } 
-				onClick={ onClick } 
-				disabled={ isDisabled ? 'disabled' : '' }>
-				{ label }
-			</button>
-		);
-	}
-}
+// 		return (
+// 			<button 
+// 				className={ className } 
+// 				onClick={ onClick } 
+// 				disabled={ isDisabled ? 'disabled' : '' }>
+// 				{ label }
+// 			</button>
+// 		);
+// 	}
+// }
 
 // Card Component - Uses outdated patterns and has CSS specificity issues
 class Card extends Component {
