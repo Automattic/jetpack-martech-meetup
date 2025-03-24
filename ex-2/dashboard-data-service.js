@@ -1,15 +1,14 @@
-// dashboard-data-service.js
+import { useState } from 'react';
 
-class DashboardDataService {
-	constructor() {
-		this.cache = {};
-		this.isLoading = false;
-		this.lastUpdated = null;
-	}
+const DashboardDataService = () => {
+	let isLoading = false;
+	let cache = {};
+	let lastUpdated = null;
 	
+
 	// BUG: This function has memory leaks and doesn't handle errors properly
-	async fetchMetrics( dateRange ) {
-		this.isLoading = true;
+	const fetchMetrics = async ( dateRange ) => {
+		isLoading = true;
 		
 		// Create endpoint URL
 		let endpoint = '/api/metrics?';
@@ -17,36 +16,37 @@ class DashboardDataService {
 		endpoint += '&end=' + dateRange.end;
 		
 		try {
-			// Inefficient - doesn't use caching properly
+			const cacheKey = `${dateRange.start}${dateRange.end}`;
+			const cache = cache[cacheKey];
+			if ( cache ) {
+				return cache;
+			}
+
 			const response = await fetch( endpoint );
 			const data = await response.json();
-			
-			// Problematic data transformation
-			const transformed = [];
-			for ( let i = 0; i < data.metrics.length; i++ ) {
-				let metric = data.metrics[i];
-				transformed.push( {
+
+			const transformed = data.metrics.map( metric => ( {
 					name: metric.name,
 					value: metric.value,
 					change: metric.previous ? ( metric.value - metric.previous ) / metric.previous : 0,
 					trend: metric.trend
-				} );
-			}
-			
-			this.cache[dateRange.start + dateRange.end] = transformed;
-			this.lastUpdated = new Date();
+			} ) );
+
+
+			cache[cacheKey] = transformed;
+			lastUpdated = new Date();
 			return transformed;
 		} catch ( error ) {
 			// Poor error handling
 			console.log( 'Error fetching metrics:', error );
 			return [];
 		} finally {
-			this.isLoading = false;
+			isLoading = false;
 		}
 	}
-	
+
 	// BUG: This function doesn't aggregate data correctly
-	getAggregatedData( metrics, groupBy ) {
+	const getAggregatedData = ( metrics, groupBy ) => {
 		if ( ! metrics || metrics.length === 0 ) {
 			return [];
 		}
@@ -78,15 +78,15 @@ class DashboardDataService {
 		
 		return output;
 	}
-	
+
 	// FEATURE NEEDED: Add functionality to compare two date ranges
 	
 	// FEATURE NEEDED: Add data export functionality
 	
 	// BUG: This function doesn't clear specific items
-	clearCache( dateRange ) {
-		// This just clears everything, not specific ranges
-		this.cache = {};
+	const clearCache = ( dateRange ) => {
+		const cacheKey = `${dateRange.start}${dateRange.end}`;
+		delete cache[cacheKey];
 		return true;
 	}
 }
