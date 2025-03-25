@@ -1,12 +1,19 @@
-## Current Status
-- What’s working:
-    - The components have been updated to functional components and moved to their own file
-    - Classname calculations were made clearer in the Button component
-## Critical Next Steps
-1. Prop validation
-2. Double-check for styling inconsistencies
-## Known Issues/Blockers
--
-## Context for Decisions
-- Why we chose this approach:
-  - We chose not to change the class name of the Button component because after separating classes into their own functions made it clearer and the different class name types have the same naming convention among themselves.
+# Button Component Refactoring
+
+## Changes Made
+
+- Converted Button component from JavaScript to TypeScript (.jsx → .tsx)
+- Added TypeScript interface for ButtonProps with proper types
+- Set default values for type ('primary') and size ('medium') props
+- Fixed equality operators from == to === for type safety
+- Fixed disabled attribute to use proper boolean instead of string
+- Maintained use of clsx for class name handling
+- Improved code formatting and readability
+
+## Next Steps
+
+- Apply the same TypeScript conversion to other JavaScript components in this project
+- Create interfaces for all component props
+- Add default values where appropriate
+- Fix equality operators and other type-safety issues
+- Ensure consistent code style across all components
