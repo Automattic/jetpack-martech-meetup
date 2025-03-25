@@ -1,6 +1,6 @@
 ## Current Status
-- What's working:
-- What's not working:
+- What's working: We created useFetchMetrics hook. thanks it.
+- What's not working: ?
 
 ## Critical Next Steps
 1. 

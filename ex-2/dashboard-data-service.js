@@ -1,94 +1,145 @@
-// dashboard-data-service.js
+import { useState, useCallback, useMemo } from 'react';
+import useFetchMetrics from './use-fetch-metrics';
+import { exportDataToFormat } from 'data-export-utils';
 
-class DashboardDataService {
-	constructor() {
-		this.cache = {};
-		this.isLoading = false;
-		this.lastUpdated = null;
-	}
+const DashboardDataService = () => {
+	// Default to last 30 days
+	const today = new Date().toISOString().split('T')[0];
+	const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 	
-	// BUG: This function has memory leaks and doesn't handle errors properly
-	async fetchMetrics( dateRange ) {
-		this.isLoading = true;
+	// State for primary date range
+	const [startDate, setStartDate] = useState(thirtyDaysAgo);
+	const [endDate, setEndDate] = useState(today);
+	
+	// State for comparison date range (optional)
+	const [comparisonStartDate, setComparisonStartDate] = useState(null);
+	const [comparisonEndDate, setComparisonEndDate] = useState(null);
+	
+	// Construct the date range objects from state
+	const dateRange = useMemo(() => ({
+		start: startDate,
+		end: endDate
+	}), [startDate, endDate]);
+	
+	const comparisonDateRange = useMemo(() => {
+		if (!comparisonStartDate || !comparisonEndDate) return null;
+		return {
+			start: comparisonStartDate,
+			end: comparisonEndDate
+		};
+	}, [comparisonStartDate, comparisonEndDate]);
+	
+	// Use our custom hook for fetching primary metrics
+	const { 
+		isLoading, 
+		data: metrics, 
+		error, 
+		lastUpdated, 
+		clearCache 
+	} = useFetchMetrics(dateRange);
+	
+	// Fetch comparison data if comparison date range is set
+	const { 
+		data: comparisonMetrics,
+	} = useFetchMetrics(comparisonDateRange || { start: null, end: null });
+
+	// Fixed and optimized aggregation function with immutability
+	const getAggregatedData = useCallback((metricsData, groupBy) => {
+		if (!metricsData || metricsData.length === 0) {
+			return [];
+		}
 		
-		// Create endpoint URL
-		let endpoint = '/api/metrics?';
-		endpoint += 'start=' + dateRange.start;
-		endpoint += '&end=' + dateRange.end;
+		// More efficient aggregation using reduce with immutability
+		const aggregated = metricsData.reduce((acc, metric) => {
+			const key = metric[groupBy];
+			
+			// Skip invalid keys
+			if (!key) return acc;
+			
+			// Create a new object instead of mutating the existing one
+			return {
+				...acc,
+				[key]: {
+					name: key,
+					value: (acc[key]?.value || 0) + metric.value,
+					count: (acc[key]?.count || 0) + 1
+				}
+			};
+		}, {});
+		
+		// Convert to array using Object.values for better performance
+		return Object.values(aggregated);
+	}, []);
+	
+	// Set comparison date range
+	const setComparisonRange = useCallback((start, end) => {
+		setComparisonStartDate(start);
+		setComparisonEndDate(end);
+	}, []);
+	
+	// Clear comparison
+	const clearComparison = useCallback(() => {
+		setComparisonStartDate(null);
+		setComparisonEndDate(null);
+	}, []);
+	
+	// Data export functionality using external library
+	const exportData = useCallback((format = 'csv') => {
+		if (!metrics || metrics.length === 0) {
+			return { success: false, error: 'No data available to export' };
+		}
 		
 		try {
-			// Inefficient - doesn't use caching properly
-			const response = await fetch( endpoint );
-			const data = await response.json();
+			// Use the hypothetical library for better export handling
+			const result = exportDataToFormat({
+				data: metrics,
+				format,
+				filename: `metrics-${dateRange.start}-to-${dateRange.end}`,
+				options: {
+					// Configuration options for the export
+					includeHeaders: true,
+					dateFormat: 'YYYY-MM-DD',
+					compression: format === 'json' ? 'gzip' : null,
+					encoding: 'utf-8'
+				}
+			});
 			
-			// Problematic data transformation
-			const transformed = [];
-			for ( let i = 0; i < data.metrics.length; i++ ) {
-				let metric = data.metrics[i];
-				transformed.push( {
-					name: metric.name,
-					value: metric.value,
-					change: metric.previous ? ( metric.value - metric.previous ) / metric.previous : 0,
-					trend: metric.trend
-				} );
-			}
-			
-			this.cache[dateRange.start + dateRange.end] = transformed;
-			this.lastUpdated = new Date();
-			return transformed;
-		} catch ( error ) {
-			// Poor error handling
-			console.log( 'Error fetching metrics:', error );
-			return [];
-		} finally {
-			this.isLoading = false;
+			return {
+				success: true,
+				downloadUrl: result.downloadUrl,
+				filename: result.filename,
+				fileSize: result.fileSize
+			};
+		} catch (error) {
+			console.error('Export failed:', error);
+			return {
+				success: false,
+				error: error.message || 'Failed to export data'
+			};
 		}
-	}
+	}, [metrics, dateRange]);
 	
-	// BUG: This function doesn't aggregate data correctly
-	getAggregatedData( metrics, groupBy ) {
-		if ( ! metrics || metrics.length === 0 ) {
-			return [];
-		}
+	return {
+		// Core metrics functionality
+		metrics,
+		isLoading,
+		error,
+		lastUpdated,
 		
-		let result = {};
+		// Aggregation functionality
+		getAggregatedData,
 		
-		// Inefficient aggregation logic
-		for ( let i = 0; i < metrics.length; i++ ) {
-			let metric = metrics[i];
-			let key = metric[groupBy];
-			
-			if ( result[key] ) {
-				result[key].value += metric.value;
-				result[key].count += 1;
-			} else {
-				result[key] = {
-					name: key,
-					value: metric.value,
-					count: 1
-				};
-			}
-		}
+		// Caching functionality
+		clearCache,
 		
-		// Convert to array - inefficiently
-		let output = [];
-		for ( let key in result ) {
-			output.push( result[key] );
-		}
+		// Date range comparison functionality
+		setComparisonRange,
+		clearComparison,
+		comparisonMetrics,
 		
-		return output;
-	}
-	
-	// FEATURE NEEDED: Add functionality to compare two date ranges
-	
-	// FEATURE NEEDED: Add data export functionality
-	
-	// BUG: This function doesn't clear specific items
-	clearCache( dateRange ) {
-		// This just clears everything, not specific ranges
-		this.cache = {};
-		return true;
-	}
-}
+		// Data export functionality
+		exportData
+	};
+};
 
 export default DashboardDataService;
